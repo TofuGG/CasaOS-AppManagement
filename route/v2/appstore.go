@@ -181,7 +181,9 @@ func (a *AppManagement) ComposeAppStoreInfoList(ctx echo.Context, params codegen
 	installedComposeApps, err := service.MyService.Compose().List(ctx.Request().Context())
 	if err != nil {
 		message := err.Error()
-		logger.Error("failed to list installed compose apps", zap.Error(err))
+		logger.Error("failed to list installed compose apps, degrading to empty list", zap.Error(err))
+		installed := []string{}
+		data.Installed = &installed
 		return ctx.JSON(http.StatusOK, codegen.ComposeAppStoreInfoListsOK{
 			Message: &message,
 			Data:    data,
