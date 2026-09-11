@@ -61,8 +61,8 @@ func (a *AppManagement) GetAppGrid(ctx echo.Context) error {
 		composeApp := (service.ComposeApp)(*app.Compose)
 		containerLists, err := composeApp.Containers(ctx.Request().Context())
 		if err != nil {
-			logger.Error("failed to get containers for compose app", zap.Error(err), zap.String("app", composeApp.Name))
-			return nil
+			logger.Error("failed to get containers for compose app — skipping", zap.Error(err), zap.String("app", composeApp.Name))
+			continue // degrade: omit this app's containers rather than returning nil (no response)
 		}
 
 		for _, containcontainerList := range containerLists {
@@ -108,8 +108,9 @@ func (a *AppManagement) GetAppGrid(ctx echo.Context) error {
 		return *item, true
 	})
 
-	// merge v1 and v2 apps
-	var appGridItems []codegen.WebAppGridItem
+	// merge v1 and v2 apps — initialize to empty slice (not var) so JSON
+	// marshals to "[]" rather than null when no apps exist.
+	appGridItems := []codegen.WebAppGridItem{}
 	appGridItems = append(appGridItems, v2AppGridItems...)
 	appGridItems = append(appGridItems, v1AppGridItems...)
 	appGridItems = append(appGridItems, containerAppGridItems...)
