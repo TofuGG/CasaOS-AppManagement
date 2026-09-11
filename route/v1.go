@@ -20,13 +20,24 @@ const (
 
 func InitV1Router() http.Handler {
 	e := echo.New()
+
+	// SECURITY: Never trust client-supplied X-Forwarded-For / X-Real-IP headers
+	// for remote-address determination (the JWT skipper previously relied on
+	// RealIP(), which echo derives from those headers).
+	e.IPExtractor = echo.ExtractIPDirect()
+
 	e.Use((echo_middleware.CORSWithConfig(echo_middleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins: []string{
+			"http://127.0.0.1:*",
+			"http://localhost:*",
+			"https://127.0.0.1:*",
+			"https://localhost:*",
+		},
 		AllowMethods:     []string{echo.POST, echo.GET, echo.OPTIONS, echo.PUT, echo.DELETE},
 		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentLength, echo.HeaderXCSRFToken, echo.HeaderContentType, echo.HeaderAccessControlAllowOrigin, echo.HeaderAccessControlAllowHeaders, echo.HeaderAccessControlAllowMethods, echo.HeaderConnection, echo.HeaderOrigin, echo.HeaderXRequestedWith},
 		ExposeHeaders:    []string{echo.HeaderContentLength, echo.HeaderAccessControlAllowOrigin, echo.HeaderAccessControlAllowHeaders},
 		MaxAge:           172800,
-		AllowCredentials: true,
+		AllowCredentials: false,
 	})))
 
 	e.Use(echo_middleware.Gzip())
@@ -37,7 +48,7 @@ func InitV1Router() http.Handler {
 
 	v1Group.Use(echo_middleware.JWTWithConfig(echo_middleware.JWTConfig{
 		Skipper: func(c echo.Context) bool {
-			return c.RealIP() == "::1" || c.RealIP() == "127.0.0.1"
+			return false // SECURITY: always require a valid JWT
 		},
 		ParseTokenFunc: func(token string, c echo.Context) (interface{}, error) {
 			valid, claims, err := jwt.Validate(token, func() (*ecdsa.PublicKey, error) { return external.GetPublicKey(config.CommonInfo.RuntimePath) })
@@ -54,7 +65,15 @@ func InitV1Router() http.Handler {
 				if len(c.Request().Header.Get(echo.HeaderAuthorization)) > 0 {
 					return []string{c.Request().Header.Get(echo.HeaderAuthorization)}, nil
 				}
-				return []string{c.QueryParam("token")}, nil
+				// The app container terminal is a browser WebSocket route that
+				// cannot set the Authorization header — allow the JWT there as
+				// a short-lived query parameter only.
+				if c.Path() == "/v1/container/:id/terminal" {
+					if t := c.QueryParam("token"); t != "" {
+						return []string{t}, nil
+					}
+				}
+				return []string{""}, nil
 			},
 		},
 	}))

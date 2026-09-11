@@ -4,7 +4,8 @@ const (
 	AppManagementServiceName = "app-management"
 	AppManagementVersion     = "0.4.16"
 
-	AppsDirectoryName = "Apps"
+	AppsDirectoryName   = "Apps"
+	V2AppsDirectoryName = "apps"
 
 	ComposeAppAuthorCasaOSTeam = "CasaOS Team"
 

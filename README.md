@@ -11,3 +11,16 @@
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-AppManagement&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-AppManagement)
 
 App management service manages CasaOS apps lifecycle, such as installation, running, etc.
+
+## Security Hardening
+
+This codebase has been hardened against the following attack classes:
+
+| # | Fix | Files |
+|---|-----|-------|
+| 7 | **JWT skippers removed** — both v1 and v2 routes require a valid bearer token; no localhost bypass | `route/v1.go`, `route/v2.go` |
+| 8 | **SSRF guard** — `go-getter` restricted to `https` scheme only; app-store URLs validated against public-IP resolution + DNS denylist | `pkg/utils/downloadHelper/getter.go`, `service/appstore.go` |
+| 9 | **TLS verification restored** — `InsecureSkipVerify: true` removed from Docker digest HTTP client | `pkg/docker/digest.go` |
+| 10 | **Default password replaced** — host-unique random secret generated at first start, stored with mode `0600` | `pkg/utils/envHelper/env.go` |
+
+Build target for verification: `GOOS=linux GOARCH=amd64 go build ./...`

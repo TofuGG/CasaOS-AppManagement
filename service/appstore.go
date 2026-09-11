@@ -71,8 +71,12 @@ func (s *appStore) CategoryMap() (map[string]codegen.CategoryInfo, error) {
 func (s *appStore) UpdateCatalog() error {
 	isSuccessful := false
 
-	if _, err := url.Parse(s.url); err != nil {
-		return err
+	if s.url != "default" {
+		// SECURITY: validate the store URL before ANY network operation —
+		// including the http.Head size probe below (SSRF guard).
+		if err := downloadHelper.ValidateAppStoreURL(s.url); err != nil {
+			return err
+		}
 	}
 
 	// check wether the zip package size change
@@ -248,9 +252,12 @@ func (s *appStore) WorkDir() (string, error) {
 }
 
 func AppStoreByURL(appstoreURL string) (AppStore, error) {
-	_, err := url.Parse(appstoreURL)
-	if err != nil {
-		return nil, err
+	// SECURITY: reject non-https or non-public-address store URLs before any
+	// network operation (SSRF / local file disclosure via go-getter).
+	if appstoreURL != "default" {
+		if err := downloadHelper.ValidateAppStoreURL(appstoreURL); err != nil {
+			return nil, err
+		}
 	}
 
 	// a appstoreKey is a normalized appstore url where everything is in lowercase
@@ -366,8 +373,8 @@ func LoadRecommend(storeRoot string) []string {
 func BuildCatalog(storeRoot string) (map[string]*ComposeApp, error) {
 	catalog := map[string]*ComposeApp{}
 
-	// walk through each folder under storeRoot/Apps and build the catalog
-	if err := filepath.WalkDir(filepath.Join(storeRoot, common.AppsDirectoryName), func(path string, d os.DirEntry, err error) error {
+	// walk through each folder under storeRoot/Apps (or storeRoot/apps for v2) and build the catalog
+	if err := filepath.WalkDir(appsDir(storeRoot), func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -406,16 +413,39 @@ func BuildCatalog(storeRoot string) (map[string]*ComposeApp, error) {
 	return catalog, nil
 }
 
+// appsDir returns the correct apps directory path, checking both v1 (Apps) and v2 (apps) formats
+func appsDir(storeRoot string) string {
+	v1Path := filepath.Join(storeRoot, common.AppsDirectoryName)
+	if _, err := os.Stat(v1Path); err == nil {
+		return v1Path
+	}
+	v2Path := filepath.Join(storeRoot, common.V2AppsDirectoryName)
+	if _, err := os.Stat(v2Path); err == nil {
+		return v2Path
+	}
+	return v1Path // default to v1
+}
+
 func StoreRoot(workdir string) (string, error) {
 	storeRoot := ""
 
-	// locate the path that contains the Apps directory
+	// locate the path that contains the Apps or apps directory (v1 or v2 format)
 	if err := filepath.WalkDir(workdir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if d.IsDir() && d.Name() == common.AppsDirectoryName {
+		if !d.IsDir() {
+			return nil
+		}
+
+		// v1: "Apps" (uppercase)
+		if d.Name() == common.AppsDirectoryName {
+			storeRoot = filepath.Dir(path)
+			return filepath.SkipDir
+		}
+		// v2: "apps" (lowercase)
+		if d.Name() == common.V2AppsDirectoryName {
 			storeRoot = filepath.Dir(path)
 			return filepath.SkipDir
 		}

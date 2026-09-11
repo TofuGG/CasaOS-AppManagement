@@ -26,3 +26,16 @@ package-lock.json
 
 .idea
 build/sysroot/usr/bin/appfile2compose
+
+# AI / agent tooling (session logs, context, memory)
+.opencode/
+.agents/
+.claude/
+.cursor/
+.codex/
+.continue/
+.agent/
+.aider/
+.aider.*
+.windsurf/
+.ai/

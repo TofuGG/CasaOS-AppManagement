@@ -11,3 +11,5 @@ AppsPath = /var/lib/casaos/apps
 [server]
 appstore = https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@gh-pages/store/main.zip
 appstore = https://github.com/bigbeartechworld/big-bear-casaos/archive/refs/heads/master.zip
+; ZimaOS official store
+appstore = https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@gh-pages/store/main.zip

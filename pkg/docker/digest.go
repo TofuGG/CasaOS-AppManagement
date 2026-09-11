@@ -5,7 +5,6 @@ package docker
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -182,8 +181,11 @@ func httpClient() *http.Client {
 		IdleConnTimeout:       90 * time.Second,
 		MaxIdleConns:          100,
 		Proxy:                 http.ProxyFromEnvironment,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true}, // nolint:gosec
-		TLSHandshakeTimeout:   10 * time.Second,
+		// SECURITY: TLS verification is intentionally enabled. This client talks
+		// to public Docker registries for token/digest exchange; disabling
+		// verification would allow MITM attacks. Self-hosted registries with
+		// self-signed certs must configure their CA, not disable verification.
+		TLSHandshakeTimeout: 10 * time.Second,
 	}}
 }
 
