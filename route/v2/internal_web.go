@@ -19,13 +19,18 @@ import (
 
 func (a *AppManagement) GetAppGrid(ctx echo.Context) error {
 	// v2 Apps
+	//
+	// When the Docker daemon is unreachable (not installed, stopped, or the
+	// socket absent — e.g. a minimal test container), there is no meaningful
+	// grid to serve. Degrade to an empty grid instead of returning 500; the
+	// UI treats a non-200 here as a fatal "failed to load apps" state even
+	// though the app store itself may be perfectly healthy.
 	composeAppsWithStoreInfo, err := composeAppsWithStoreInfo(ctx.Request().Context(), composeAppsWithStoreInfoOpts{
 		checkIsUpdateAvailable: false,
 	})
 	if err != nil {
-		message := err.Error()
-		logger.Error("failed to list compose apps with store info", zap.Error(err))
-		return ctx.JSON(http.StatusInternalServerError, codegen.ResponseInternalServerError{Message: &message})
+		logger.Error("failed to list compose apps with store info - degraded to empty app grid", zap.Error(err))
+		composeAppsWithStoreInfo = map[string]codegen.ComposeAppWithStoreInfo{}
 	}
 
 	v2AppGridItems := lo.FilterMap(lo.Values(composeAppsWithStoreInfo), func(app codegen.ComposeAppWithStoreInfo, i int) (codegen.WebAppGridItem, bool) {
