@@ -1,5 +1,10 @@
 # CasaOS-AppManagement
 
+> ⚠️ **UNOFFICIAL FORK — NOT THE OFFICIAL RELEASE.** This is a **TofuGG** community
+> fork of the CasaOS AppManagement service, not affiliated with or endorsed by the
+> official CasaOS / IceWhaleTech team. It is provided **AS-IS** with **no warranty**
+> and **no official support**. **USE AT YOUR OWN RISK.**
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/IceWhaleTech/CasaOS-AppManagement.svg)](https://pkg.go.dev/github.com/IceWhaleTech/CasaOS-AppManagement)
 [![Go Report Card](https://goreportcard.com/badge/github.com/IceWhaleTech/CasaOS-AppManagement)](https://goreportcard.com/report/github.com/IceWhaleTech/CasaOS-AppManagement)
 [![goreleaser](https://github.com/IceWhaleTech/CasaOS-AppManagement/actions/workflows/release.yml/badge.svg)](https://github.com/IceWhaleTech/CasaOS-AppManagement/actions/workflows/release.yml)
